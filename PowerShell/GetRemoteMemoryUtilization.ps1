@@ -3,7 +3,7 @@
 
     $table = @();
 
-    Get-Process |         
+    Get-Process -ComputerName $computer |         
         Group-Object -Property ProcessName |
         %{
             $process = $_;
