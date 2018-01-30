@@ -3,11 +3,11 @@
 
     $table = @();
 
-    Get-Process -ComputerName $computer |         
+    Get-Process |         
         Group-Object -Property ProcessName |
         %{
             $process = $_;
-            $table += New-Object psobject -Property @{
+            $table  += New-Object psobject -Property @{
                 Name       = $process.Name
                 WorkingSet = ($process.Group | Measure-Object WorkingSet -Sum).Sum / 1KB
             };
