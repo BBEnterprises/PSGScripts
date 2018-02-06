@@ -21,6 +21,7 @@ function checkService {
     $serviceObj = Get-Service -ComputerName $service.serverName -Name $service.serviceName -ErrorAction SilentlyContinue;
 
     if ($serviceObj.Status -ne 'Running')  {
+        
         return 1;
     }
 
@@ -118,6 +119,8 @@ function alert {
 #Main Block Below Here#
 #######################
 $cfgFile      = 'C:\temp\serviceMon.cfg';
+$baseLog      = 'C:\temp\serviceMon.log';
+$alertLog     = 'C:\temp\serviceMonAlert.log';
 $services     = readConfig $cfgFile;
 $downServices = @();
 
