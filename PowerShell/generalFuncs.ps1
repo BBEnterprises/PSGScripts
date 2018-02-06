@@ -106,22 +106,32 @@ function readFile ($file, $string) {
 }
 
 function checkForExceptions {
-    param($customers);    
+    param(
+        $customers
+        ,$monthCutOff = 1
+    );    
 
-    $rootDir = '\\HSS-PROD-SVC01\Source_Backup\EXCEPTIONS\';
+    $cutOffDate = ([DateTime]::Today).AddMonths($monthCutOff * -1);
 
-    if (-not $customers) {
-        Get-ChildItem -LiteralPath $rootDir -Recurse | ?{ -not $_.PSIsContainer } | %{
-            Write-Host $_.FullName
+    $rootDirs   = @(
+        '\\HSS-PROD-SVC01\Source_Backup\EXCEPTIONS\',
+        '\\HSS-PROD-DB01\Source_Backup\EXCEPTIONS\'
+    );
+
+    foreach ($rootDir in $rootDirs) {
+        if (-not $customers) {
+            Get-ChildItem -LiteralPath $rootDir -Recurse | ?{ -not $_.PSIsContainer -and $_.LastWriteTime -ge $cutOffDate} | %{
+                Write-Host $_.FullName
+            }
         }
-    }
 
-    foreach ($customer in $customers) {
-        $directory = $rootDir + $customer + '\';
+        foreach ($customer in $customers) {
+            $directory = $rootDir + $customer + '\';
 
-        Get-ChildItem -LiteralPath $directory -Recurse | ?{ -not $_.PSIsContainer } | %{
-            Write-Host $_.FullName
+            Get-ChildItem -LiteralPath $directory -Recurse | ?{ -not $_.PSIsContainer -and $_.LastWriteTime -ge $cutOffDate} | %{
+                Write-Host $_.FullName
+            }
+
         }
-
     }
 }
