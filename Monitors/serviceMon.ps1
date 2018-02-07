@@ -109,14 +109,14 @@ function alert {
 
     $dateTime   = [DateTime]::Now;
     $toMail     = 'cgamble@psg340b.com';
-    $fromMail   = 'ServiceMonitor@psg340b.com';
+    $fromMail   = 'amonitor@psgconsults.com';
     $subject    = 'Production Services Down!';
     $body       = $message;
     $smtp       = 'smtp.office365.com'
     $logMessage = '';
     
     $secPassWord = Get-Content $global:passFile | ConvertTo-SecureString
-    $creds       = New-Object System.Management.Automation.PSCredential("amonitor@psgconsults.com", $secPassWord);
+    $creds       = New-Object System.Management.Automation.PSCredential($fromMail, $secPassWord);
 
     foreach ($service in $downServices) {
         $logMessage += ("{0} : {1} : {2} : {3} : Email notification sent to {4}`n" -f `
@@ -137,7 +137,8 @@ function alert {
             -Body $body `
             -SmtpServer $smtp `
             -Credential $creds `
-            -UseSsl;
+            -UseSsl `
+            -BodyAsHtml;
         
         $logMessage | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
     }
