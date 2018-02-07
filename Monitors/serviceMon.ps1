@@ -9,6 +9,7 @@
             'serverName'  = $serverName;
             'serviceName' = $serviceName;
             'monitored'   = $monitored;
+            'Status'      = '';
         }
     }
 
@@ -16,12 +17,20 @@
 }
 
 function checkService {
-    param($service);
+    param([ref]$service);
 
-    $serviceObj = Get-Service -ComputerName $service.serverName -Name $service.serviceName -ErrorAction SilentlyContinue;
+    $serviceObj = Get-Service -ComputerName $service.value.serverName -Name $service.value.serviceName -ErrorAction SilentlyContinue;
+    if ($serviceObj) {
+        $service.value.Status = $serviceObj.Status.ToString();    
+    }
 
-    if ($serviceObj.Status -ne 'Running')  {
+
+    if ($service.value.Status -ne 'Running')  {
+        $dateTime = [DateTime]::Now;
         
+        ('{0} : {1} : {2} : {3}' -f $dateTime, $service.value.serverName, $service.value.serviceName, $service.value.Status) |
+            Out-File -FilePath $global:baseLog -Encoding ascii -Append;
+
         return 1;
     }
 
@@ -93,26 +102,49 @@ function getExecutable {
 }
 
 function alert {
-    param($message);
+    param(
+        $message
+        ,$downServices
+    );
 
-    #$creds    = createCred
-    $toMail   = 'cgamble@psg340b.com';
-    $fromMail = 'WebPortalMonitor@psg340b.com';
-    $subject  = 'Web Portal Error';
-    $body     = $message;
-    $smtp     = 'smtp.office365.com'
+    $dateTime   = [DateTime]::Now;
+    $toMail     = 'cgamble@psg340b.com';
+    $fromMail   = 'ServiceMonitor@psg340b.com';
+    $subject    = 'Production Services Down!';
+    $body       = $message;
+    $smtp       = 'smtp.office365.com'
+    $logMessage = '';
+    
+    $secPassWord = Get-Content $global:passFile | ConvertTo-SecureString
+    $creds       = New-Object System.Management.Automation.PSCredential("amonitor@psgconsults.com", $secPassWord);
 
-    <#
-    Send-MailMessage `
-        -To $toMail `
-        -From $fromMail `
-        -Subject $subject `
-        -Body $body `
-        -SmtpServer $smtp `
-        -Credential $creds;
-    #>
+    foreach ($service in $downServices) {
+        $logMessage += ("{0} : {1} : {2} : {3} : Email notification sent to {4}`n" -f `
+            $dateTime `
+            ,$service.serverName `
+            ,$service.serviceName `
+            ,$service.Status `
+            ,$toMail
+        );
+    }
+    
+    try {
+        
+        Send-MailMessage `
+            -To $toMail `
+            -From $fromMail `
+            -Subject $subject `
+            -Body $body `
+            -SmtpServer $smtp `
+            -Credential $creds `
+            -UseSsl;
+        
+        $logMessage | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
+    }
+    catch {
+        'Failed to send email alert to {0}!' -f $toMail | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
+    }
 
-    Write-Host $message;
 }
 
 #######################
@@ -121,17 +153,20 @@ function alert {
 $cfgFile      = 'C:\temp\serviceMon.cfg';
 $baseLog      = 'C:\temp\serviceMon.log';
 $alertLog     = 'C:\temp\serviceMonAlert.log';
+$passFile     = 'C:\temp\smtpPass';
 $services     = readConfig $cfgFile;
 $downServices = @();
 
 
 foreach ($service in $services) {
-    if (checkService $service) {
+    if (checkService ([ref]$service)) {
+        Write-Host ("DOWN SERVICE: {0}|{1}" -f $service.serverName, $service.serviceName);
         $downServices += $service;
     }
 }
 
 
 if ($downServices) {
-    $message = generateAlertText $downServices;
+    $message = generateAlertText $downServices
+    alert $message $downServices;
 }
