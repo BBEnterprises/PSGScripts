@@ -3,7 +3,7 @@
 
     $services = @();
 
-    Get-Content -Path $cfgFile | %{
+    Get-Content -Path $cfgFile | ?{ $_ -notmatch '^\s*#'} | %{
         ($serverName, $serviceName, $monitored) = $_ -split '\s*:\s*';
         $services += New-Object -TypeName PSObject -Property @{
             'serverName'  = $serverName;
@@ -108,7 +108,8 @@ function alert {
     );
 
     $dateTime   = [DateTime]::Now;
-    $toMail     = 'cgamble@psg340b.com';
+    #$toMail     = 'cgamble@psg340b.com';
+    $toMail     = 'PSG340BTechOps@psg340b.com';
     $fromMail   = 'amonitor@psgconsults.com';
     $subject    = 'Production Services Down!';
     $body       = $message;
@@ -129,7 +130,6 @@ function alert {
     }
     
     try {
-        
         Send-MailMessage `
             -To $toMail `
             -From $fromMail `
@@ -138,12 +138,14 @@ function alert {
             -SmtpServer $smtp `
             -Credential $creds `
             -UseSsl `
-            -BodyAsHtml;
+            -BodyAsHtml `
+            -Port 587 `
+            -ErrorAction Stop;
         
         $logMessage | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
     }
     catch {
-        'Failed to send email alert to {0}!' -f $toMail | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
+        "{0} : Failed to send email alert to {1} with exception:{2}`n" -f $dateTime, $toMail, $_.Exception.Message | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
     }
 
 }
@@ -151,7 +153,8 @@ function alert {
 #######################
 #Main Block Below Here#
 #######################
-$cfgFile      = 'C:\temp\serviceMon.cfg';
+$cfgFile      = 'C:\users\cgamble\documents\betaServiceMon.cfg';
+#$cfgFile      = 'C:\temp\serviceMon.cfg';
 $baseLog      = 'C:\temp\serviceMon.log';
 $alertLog     = 'C:\temp\serviceMonAlert.log';
 $passFile     = 'C:\temp\smtpPass';
@@ -161,7 +164,6 @@ $downServices = @();
 
 foreach ($service in $services) {
     if (checkService ([ref]$service)) {
-        Write-Host ("DOWN SERVICE: {0}|{1}" -f $service.serverName, $service.serviceName);
         $downServices += $service;
     }
 }
