@@ -7,7 +7,6 @@
         #Write-Host $directory.newDir;
 
         if ($directory.newDir -and -not (Test-Path -Path $directory.newDir)) {
-            #'"{0}","{1}","{2}"' -f $directory.newDir, $directory.origLine, $directory.fileName | Out-File -FilePath C:\temp\temp.txt -Encoding ascii -Append
             Write-Host ('"{0}","{1}","{2}"' -f $directory.newDir, $directory.origLine, $directory.fileName);
         }
     }
