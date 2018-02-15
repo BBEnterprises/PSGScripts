@@ -49,9 +49,15 @@ function checkCfg {
 ############
 #Main Block#
 ############
+$clientConfigs = @(
+    'fff.cfg'
+    ,'hcpharm.cfg'
+    ,'hdsmith.cfg'
+    ,'kindray.cfg'
+);
 
 Get-ChildItem -Path '\\psg-file01\Shared\Public\EDIMultiThreading\Deployment\22400\deploy\svc01\' | ?{ $_.Name -notmatch '^prod' } | %{
-    $_ | Get-ChildItem -Recurse | ?{ $_.Name -match '\.cfg$' -and ($_.Name -match 'fff' -or $_.Name -match 'hcpharm' -or $_.Name -match 'hdsmith' -or $_.Name -match 'kindray') } | %{
+    $_ | Get-ChildItem -Recurse | ?{ $_.Name -match '\.cfg$' -and $clientConfigs.Contains($_.Name) } | %{
         checkCfg $_;
     }
 }
