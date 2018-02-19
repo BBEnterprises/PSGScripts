@@ -10,8 +10,6 @@
             Write-Host ('"{0}","{1}","{2}"' -f $directory.newDir, $directory.origLine, $directory.fileName);
         }
     }
-
-
 }
 
 function checkCfg {
@@ -24,6 +22,7 @@ function checkCfg {
         ,'_BackupLocation" value="(.+)"'
         ,'_ExceptionLocation" value="(.+)"'
         ,'Output_.+_Folder" value="(.+)"'
+        ,'Input_.+_InputDir value="(.+)"'
     );
 
     $dirList = @();
