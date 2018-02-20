@@ -22,9 +22,9 @@ function confirmCopies {
 
     #First make sure all your deploy files exist
     $missingFile = 0
-    foreach ($copy in $actionList.Value) {   
-        if ( -not (Test-Path $copy.sourceFile) ) {
-            Write-Host ("Missing File: {0}" -f $copy.sourceFile);
+    foreach ($action in $actionList.Value) {   
+        if ( -not (Test-Path $action.sourceFile) ) {
+            Write-Host ("Missing File: {0}" -f $action.sourceFile);
             $missingFile = 1;
         }
     }
@@ -32,10 +32,10 @@ function confirmCopies {
 
 
     #IF all files are present prompt the user to review the copies that are about to happen
-    $caption  = 'Review File Copies';
-    $message  = "Carefully review the  file copies listed in your terminal and confirm their accuracy`n";
+    $caption  = 'Review File Actions';
+    $message  = "Carefully review the  actions listed in your terminal and confirm their accuracy`n";
     
-    $copyList.Value | ft -AutoSize
+    $actionList.Value | select action, sourceFile, destFile | ft -AutoSize
     
     $options  = [System.Management.Automation.Host.ChoiceDescription[]] @('Proceed', 'Halt');
 
@@ -50,13 +50,13 @@ function runActions {
     param([ref]$actionList);
 
     $actionTypes = @{
-        'copy'   = $Function:copyFile;
-        'rename' = $Function:renameFile;
-        'delete' = $Function:deleteFile;
+        'copy'   = $function:copyFile;
+        'rename' = $function:renameFile;
+        'delete' = $function:deleteFile;
     }
 
     foreach ($action in $actionList.Value) {
-        & $actionTypes.$action.action $action;
+        & $actionTypes.($action.action) $action;
     }
 
     return 1;
@@ -68,7 +68,7 @@ function copyFile {
 
     try {
         Copy-Item -Path $action.sourceFile -Destination $action.destFile -ErrorAction Stop
-        Write-Host ("Copying: {0}" -f $action.sourceFile);
+        Write-Host ("Copying: {0} to {1}" -f $action.sourceFile, $action.destFile);
     }
     catch {
         Write-Host ("COPY ERROR :{0}, {1}" -f $action.sourceFile, $_.Exception.Message);
@@ -112,7 +112,7 @@ function deleteFile {
 $cfgFile  = 'C:\users\cgamble\Documents\Code\PSGScripts\DeployScripts\TestDeploy\rollback.cfg';
 $actionList = @();
 
-readCfg       $cfgFile ([ref]$copyList);
+readCfg       $cfgFile ([ref]$actionList);
 confirmCopies ([ref]$actionList);
 runActions    ([ref]$actionList);
 
