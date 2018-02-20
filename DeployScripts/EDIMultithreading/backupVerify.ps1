@@ -43,7 +43,7 @@ function compareFiles {
 ############
 #Main Block#
 ############
-$rollbackCfgFile = 'C:\users\cgamble\Documents\Code\PSGScripts\DeployScripts\22400\rollback.cfg';
+$rollbackCfgFile = 'C:\Users\cgamble\Documents\Code\PSGScripts\DeployScripts\TestDeploy\rollback.cfg';
 $copyList        = @();
 
 readCfg       $rollbackCfgFile ([ref]$copyList);

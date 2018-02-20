@@ -2,7 +2,8 @@
     param($dirList);
 
     foreach ($directory in $dirList) {
-        $directory.newDir = $directory.newDir -replace 'E:\\', '\\hss-prod-svc01\'
+        #$directory.newDir = $directory.newDir -replace 'E:\\', '\\hss-test-svc01\'
+        $directory.newDir = $directory.newDir -replace 'E:\\', '\\hss-test-db01\e$\'
         
         #Write-Host $directory.newDir;
 
@@ -49,13 +50,14 @@ function checkCfg {
 #Main Block#
 ############
 $clientConfigs = @(
-    'fff.cfg'
-    ,'hcpharm.cfg'
-    ,'hdsmith.cfg'
-    ,'kindray.cfg'
+    'hospira.cfg'
+    ,'morris.cfg'
+    ,'ncmutual.cfg'
+    ,'om.cfg'
+    ,'rochesterdrug.cfg'
 );
 
-Get-ChildItem -Path '\\psg-file01\Shared\Public\EDIMultiThreading\Deployment\22400\deploy\svc01\' | ?{ $_.Name -notmatch '^prod' } | %{
+Get-ChildItem -Path '\\psg-file01\shared\Public\EDIMultiThreading\DeploymentTest01\22557\deploy\db01' | ?{ $_.Name -notmatch '^prod' } | %{
     $_ | Get-ChildItem -Recurse | ?{ $_.Name -match '\.cfg$' -and $clientConfigs.Contains($_.Name) } | %{
         checkCfg $_;
     }
