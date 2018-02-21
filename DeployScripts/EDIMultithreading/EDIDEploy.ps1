@@ -10,7 +10,7 @@
         $actionList.Value += New-Object -TypeName psobject -Property @{
             'sourceFile' = $sourceFile;
             'destFile'   = $destFile;
-            'action'     = $action;
+            'actionType' = $action;
         }
     }
 
@@ -56,7 +56,7 @@ function runActions {
     }
 
     foreach ($action in $actionList.Value) {
-        & $actionTypes.($action.action) $action;
+        & $actionTypes.($action.actionType) $action;
     }
 
     return 1;
