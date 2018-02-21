@@ -17,7 +17,7 @@ function checkCfg {
     param($cfgFile);
 
     $keyList = @(
-        '_InputDir'
+        '_InputDir" value="(.+)"'
         ,'_WorkingLocation" value="(.+)"'
         ,'_OutputLocation" value="(.+)"'
         ,'_BackupLocation" value="(.+)"'
