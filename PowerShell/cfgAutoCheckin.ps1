@@ -56,25 +56,41 @@ function alert {
 ############
 #Main Block#
 ############
-$localRepo   = 'C:\users\cgamble\Documents\code\340b_Prod_Cfgs\cfgFiles\';
+$localRepo   = 'C:\users\cgamble\Documents\code\PSG340B_EDISVC_Configs\cfgFiles\';
 $regEx       = [System.Text.RegularExpressions.Regex]::Escape($localRepo) + '(.+)$';
-$alertLog   = 'C:\temp\autoCheckInAlertLog';
+$alertLog    = 'C:\temp\autoCheckInAlertLog';
 $passFile    = 'C:\Temp\smtpPass';
 $checkInList = @();
+$localList   = @();
+$remoteList  = @();
+
+<#
+Build local list
+Build remote list
+Compare all files that exist in both, checkin changes
+look for any files missing from local list, add them, check in
+look for any files missing from remote list, remove them, check in 
+push
+
+#>
+
 
 Set-Location $localRepo;
 
 Get-ChildItem $localRepo -Recurse | ?{ -not $_.PSIsContainer }|%{
-    Write-Host $_.FullName
     $remotePath = '';
-    
+
+
     if ($_.FullName -match $regEx) {
         $remotePath = '\\' + $matches[1];
 
+        
+        <#
         if (compareFiles $_.FullName $remotePath) {
             $checkInList += $remotePath;
             Copy-Item -Path $remotePath -Destination $_.FullName;
         }
+        #>
     }
 }
 
