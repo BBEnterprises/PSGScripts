@@ -9,7 +9,7 @@ function checkInChanges {
 
     $status = git status 2>&1;
 
-    if ($status -match '') {    
+    if ($status -notmatch 'nothing to commit, working tree clean') {    
         git checkout staging;
         git add ./;
         git commit -m $commitMessage;
@@ -17,7 +17,10 @@ function checkInChanges {
         $output = git push 2>&1;
 
         if ($output -match 'error:') {
-            alert ($output.Exception.Message -join "`n");
+            alert ($output.Exception.Message -join "`n") '340b Cfg AutoCommit Failed!';
+        }
+        else  {
+            alert ($output) '340b Cfg AutoCommit Successful!';
         }
     }   
 }
