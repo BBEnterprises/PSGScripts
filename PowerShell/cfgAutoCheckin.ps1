@@ -12,6 +12,7 @@ function checkInChanges {
     if ($status -notmatch 'nothing to commit, working tree clean') {    
         git checkout staging;
         git add ./;
+        $status = git status;
         git commit -m $commitMessage;
 
         $output = git push 2>&1;
@@ -20,7 +21,7 @@ function checkInChanges {
             alert ($output.Exception.Message -join "`n") '340b Cfg AutoCommit Failed!';
         }
         else  {
-            alert ($output) '340b Cfg AutoCommit Successful!';
+            alert $status '340b Cfg AutoCommit Successful!';
         }
     }   
 }
@@ -36,7 +37,6 @@ function alert {
     $toMail     = 'cgamble@psg340b.com';
     #$toMail     = 'PSG340BTechOps@psg340b.com';
     $fromMail   = 'amonitor@psgconsults.com';
-    $body       = $message;
     $smtp       = 'smtp.office365.com'
     $logMessage = '';
   
@@ -48,7 +48,7 @@ function alert {
             -To $toMail `
             -From $fromMail `
             -Subject $subject `
-            -Body $body `
+            -Body $message `
             -SmtpServer $smtp `
             -Credential $creds `
             -UseSsl `
