@@ -13,6 +13,7 @@ function checkInChanges {
         git checkout staging;
         git add ./;
         $status = git status;
+        $status = $status -replace "`n", "`r`n";
         git commit -m $commitMessage;
 
         $output = git push 2>&1;
@@ -61,6 +62,24 @@ function alert {
 
 }
 
+function checkFiles {
+    Get-ChildItem $global:localRepo -Recurse | ?{ -not $_.PSIsContainer }|%{
+        $remotePath = '';
+        
+        if ($_.FullName -match $global:regEx) {
+            $remotePath = '\\' + $matches[1];
+
+            if (-not (Test-Path $remotePath)) {
+                Remove-Item $_.FullName;
+            }
+            elseif (compareFiles $_.FullName $remotePath) {
+                $checkInList += $remotePath;
+                Copy-Item -Path $remotePath -Destination $_.FullName;
+            }
+        }
+    }
+}
+
 ############
 #Main Block#
 ############
@@ -68,20 +87,10 @@ $localRepo   = 'C:\Users\cgamble\Documents\Code\PSG340B_EDISVC_Configs\cfgFiles\
 $regEx       = [System.Text.RegularExpressions.Regex]::Escape($localRepo) + '(.+)$';
 $alertLog    = 'C:\temp\autoCheckInAlertLog';
 $passFile    = 'C:\Temp\smtpPass';
-$checkInList = @();
 
 Set-Location $localRepo;
 
-Get-ChildItem $localRepo -Recurse | ?{ -not $_.PSIsContainer }|%{
-    $remotePath = '';
-    if ($_.FullName -match $regEx) {
-        $remotePath = '\\' + $matches[1];
-        if (compareFiles $_.FullName $remotePath) {
-            $checkInList += $remotePath;
-            Copy-Item -Path $remotePath -Destination $_.FullName;
-        }
-    }
-}
+checkFiles;
 
 checkInChanges;
 
