@@ -2,13 +2,14 @@
     param($dirList);
 
     foreach ($directory in $dirList) {
-        #$directory.newDir = $directory.newDir -replace 'E:\\', '\\hss-test-svc01\'
-        $directory.newDir = $directory.newDir -replace 'E:\\', '\\hss-test-db01\e$\'
+        $directory.newDir = $directory.newDir -replace 'E:\\', '\\hss-prod-svc01\'
+        #$directory.newDir = $directory.newDir -replace 'E:\\', '\\hss-test-db01\e$\'
         
         #Write-Host $directory.newDir;
 
         if ($directory.newDir -and -not (Test-Path -Path $directory.newDir)) {
             Write-Host ('"{0}","{1}","{2}"' -f $directory.newDir, $directory.origLine, $directory.fileName);
+            '"{0}","{1}","{2}"' -f $directory.newDir, $directory.origLine, $directory.fileName | Out-File -FilePath C:\Temp\missingFiles.csv  -Append -Encoding ascii
         }
     }
 }
@@ -57,8 +58,8 @@ $clientConfigs = @(
     ,'rochesterdrug.cfg'
 );
 
-Get-ChildItem -Path '\\psg-file01\shared\Public\EDIMultiThreading\DeploymentTest01\22557\deploy\db01' | ?{ $_.Name -notmatch '^prod' } | %{
-    $_ | Get-ChildItem -Recurse | ?{ $_.Name -match '\.cfg$' -and $clientConfigs.Contains($_.Name) } | %{
+Get-ChildItem -Path '\\psg-file01\shared\Public\EDIMultiThreading\Deployment\22557\deploy\svc01' | ?{ $_.Name -notmatch '^prod' } | %{
+    $_ | Get-ChildItem -Recurse | ?{ $_.Name -match '\.cfg$' } | %{
         checkCfg $_;
     }
 }

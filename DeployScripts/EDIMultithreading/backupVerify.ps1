@@ -5,7 +5,7 @@
     );
 
     Get-Content -Path $cfgFile | ?{ $_ -notmatch '^\s*#'} | %{
-        ($sourceFile, $destFile) = $_ -split '\s*:\s*';
+        ($action, $sourceFile, $destFile) = $_ -split '\s*:\s*';
         
         $copyList.Value += New-Object -TypeName psobject -Property @{
             'sourceFile' = $sourceFile;
@@ -43,7 +43,7 @@ function compareFiles {
 ############
 #Main Block#
 ############
-$rollbackCfgFile = 'C:\Users\cgamble\Documents\Code\PSGScripts\DeployScripts\TestDeploy\rollback.cfg';
+$rollbackCfgFile = 'C:\Users\cgamble\Documents\Code\PSGScripts\DeployScripts\22557\rollback.cfg'
 $copyList        = @();
 
 readCfg       $rollbackCfgFile ([ref]$copyList);

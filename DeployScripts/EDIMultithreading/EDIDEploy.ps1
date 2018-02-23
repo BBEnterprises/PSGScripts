@@ -108,8 +108,8 @@ function deleteFile {
 ############
 #Main Block#
 ############
-#$cfgFile  = 'C:\users\cgamble\Documents\Code\PSGScripts\DeployScripts\TestDeploy\deploy.cfg';
-$cfgFile  = 'C:\users\cgamble\Documents\Code\PSGScripts\DeployScripts\TestDeploy\rollback.cfg';
+$cfgFile  = 'C:\Users\cgamble\Documents\Code\PSGScripts\DeployScripts\22557\deploy.cfg';
+#$cfgFile  = 'C:\users\cgamble\Documents\Code\PSGScripts\DeployScripts\TestDeploy\rollback.cfg';
 $actionList = @();
 
 readCfg       $cfgFile ([ref]$actionList);
