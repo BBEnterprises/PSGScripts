@@ -9,7 +9,7 @@
             'serverName'  = $serverName;
             'serviceName' = $serviceName;
             'monitored'   = $monitored;
-            'Status'      = '';
+            'Status'      = 'unknown';
         }
     }
 
@@ -18,24 +18,37 @@
 
 function checkService {
     param([ref]$service);
+    $serviceObj = 0;
 
-    $serviceObj = Get-Service -ComputerName $service.value.serverName -Name $service.value.serviceName -ErrorAction SilentlyContinue;
+    $job = Start-Job -ArgumentList($service) -ScriptBlock {
+        param($service);
+        Get-Service -ComputerName $service.value.serverName -Name $service.value.serviceName -ErrorAction SilentlyContinue;
+    }
+
+    if (Wait-Job -Job $job -Timeout 15) {
+        $serviceObj = Receive-Job $job;
+        Remove-Job $job;
+    }
+    else {
+        Stop-Job $job;
+        Remove-Job $job;
+        $logMessage = "Get-Service remote invocation failed against {0}!" -f $service.value.serverName;
+        $logMessage | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
+    }
+
     if ($serviceObj) {
         $service.value.Status = $serviceObj.Status.ToString();    
     }
 
+    $dateTime = [DateTime]::Now;
+    ('{0} : {1} : {2} : {3}' -f $dateTime, $service.value.serverName, $service.value.serviceName, $service.value.Status) |
+    Out-File -FilePath $global:baseLog -Encoding ascii -Append;
 
     if ($service.value.Status -ne 'Running')  {
-        $dateTime = [DateTime]::Now;
-        
-        ('{0} : {1} : {2} : {3}' -f $dateTime, $service.value.serverName, $service.value.serviceName, $service.value.Status) |
-            Out-File -FilePath $global:baseLog -Encoding ascii -Append;
-
         return 1;
     }
 
     return 0;
-
 }
 
 function generateAlertText {
@@ -108,8 +121,8 @@ function alert {
     );
 
     $dateTime   = [DateTime]::Now;
-    #$toMail     = 'cgamble@psg340b.com';
-    $toMail     = 'PSG340BTechOps@psg340b.com';
+    $toMail     = 'cgamble@psg340b.com';
+    #$toMail     = 'PSG340BTechOps@psg340b.com';
     $fromMail   = 'amonitor@psgconsults.com';
     $subject    = 'Production Services Down!';
     $body       = $message;
@@ -153,8 +166,8 @@ function alert {
 #######################
 #Main Block Below Here#
 #######################
-$cfgFile      = 'C:\users\cgamble\documents\betaServiceMon.cfg';
-#$cfgFile      = 'C:\temp\serviceMon.cfg';
+#$cfgFile      = 'C:\users\cgamble\documents\betaServiceMon.cfg';
+$cfgFile      = 'C:\users\cgamble\documents\code\PSGScripts\scriptCfg\serviceMon.cfg';
 $baseLog      = 'C:\temp\serviceMon.log';
 $alertLog     = 'C:\temp\serviceMonAlert.log';
 $passFile     = 'C:\temp\smtpPass';
@@ -167,6 +180,11 @@ foreach ($service in $services) {
         $downServices += $service;
     }
 }
+
+
+<#
+1 - Make script output to log even when it finds no problems
+#>
 
 
 if ($downServices) {
