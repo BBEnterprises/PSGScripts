@@ -94,3 +94,11 @@ checkFiles;
 
 checkInChanges;
 
+
+<#
+TO DO:
+    1 - Add runlog to script
+         - record each run
+         - record what it found (if anything)
+#>
+
