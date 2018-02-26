@@ -27,16 +27,32 @@
 function testConnection ($computer, $remoteHost, $remotePort) {
   Write-Host -NoNewLine $computer ' ' $remoteHost ':' $remotePort;
   try {
-    Invoke-Command -ErrorAction Stop -ComputerName $computer -ArgumentList ($remoteHost, $remotePort, $testPortFunc) -ScriptBlock {
-      param($remoteHost, $remotePort, $testPortFunc);  
+    $job = Start-Job -ArgumentList($computer, $remoteHost, $remotePort, $testPortFunc) -ScriptBlock {
+        param(
+             [string]     $computer
+            ,[string]     $remoteHost
+            ,[string]     $remotePort
+            ,$testPortFunc
+        );
+        Invoke-Command -ErrorAction Stop -ComputerName $computer -ArgumentList ($remoteHost, $remotePort, $testPortFunc) -ScriptBlock {
+          param($remoteHost, $remotePort, $testPortFunc);  
       
-      if( & ([scriptblock]::Create($testPortFunc)) -myhost $remoteHost -myport $remotePort ) {
-          Write-Host "`tSuccess!";
-      }
-      else {
-          Write-Host "`tFailure!";
-      }
+          if( & ([scriptblock]::Create($testPortFunc)) -myhost $remoteHost -myport $remotePort ) {
+              Write-Host "`tSuccess!";
+          }
+          else {
+              Write-Host "`tFailure!";
+          }
+        }
     }
+    if (-not (Wait-Job -Job $job -Timeout 15) ) {
+        $errorMessage = 'Command invokation failed against {0}!' -f $computer;
+        Stop-Job   $job;
+        Remove-Job $job;
+        throw $errorMessage;
+    }
+    Receive-Job $job;
+    Remove-Job  $job;
   }
   catch {
     write-host "`tUnknown!";
@@ -47,20 +63,27 @@ function testConnection ($computer, $remoteHost, $remotePort) {
 #Main Block Below Here#
 #######################
 $computers = @(
-    ,'mem-pr-ap-52'
-    ,'mem-pr-ap-56'
-    ,'mem-pr-ap-58'
-    ,'chi-pr-ap-51'
-    ,'chi-pr-ap-53'
-    ,'chi-pr-ap-57'
+    #'HSS-PROD-APP01',
+    'HSS-PROD-DB01',
+    <#'HSS-PROD-DB02',
+    'HSS-PROD-DB03',
+    'HSS-PROD-DB04',
+    'HSS-PROD-DB05',
+    'HSS-PROD-DB06',
+    'HSS-PROD-DT01',
+    'HSS-PROD-FTP01',
+    'HSS-PROD-PWS01',
+    'HSS-PROD-SVC01'#>,
+    'HSS-PROD-WEB01'
+    #'HSS-PROD-WEB02'
 );
 
 $remoteHosts = @(
-  '192.60.73.1'
+  'HSS-PROD-DB06'
 );
 
 $remotePorts = @(
-    '6218'
+    '5985'
 );
 
 
