@@ -20,9 +20,17 @@ function checkService {
     param([ref]$service);
     $serviceObj = 0;
 
-    $job = Start-Job -ArgumentList($service) -ScriptBlock {
+    <#$job = Start-Job -ArgumentList($service) -ScriptBlock {
         param($service);
         Get-Service -ComputerName $service.value.serverName -Name $service.value.serviceName -ErrorAction SilentlyContinue;
+    }#>
+
+    $job = Start-Job -ArgumentList($service) -ScriptBlock {
+        param($service);
+        Invoke-Command -ComputerName $service.value.serverName -ArgumentList($service.value.serviceName) -ScriptBlock {
+            param($serviceName);
+            Get-Service -Name $serviceName -ErrorAction SilentlyContinue;
+        }
     }
 
     if (Wait-Job -Job $job -Timeout 15) {
@@ -33,7 +41,7 @@ function checkService {
         Stop-Job $job;
         Remove-Job $job;
         $logMessage = "Get-Service remote invocation failed against {0}!" -f $service.value.serverName;
-        $logMessage | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
+        $logMessage | Out-File -FilePath $global:baseLog -Encoding ascii -Append;
     }
 
     if ($serviceObj) {
