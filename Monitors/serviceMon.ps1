@@ -115,6 +115,10 @@ function generateAlertText {
 function getExecutable {
     param($service);
 
+    if ($service.Status -eq 'unknown') {
+        return 'unknown';
+    }
+
     $execPath = Get-WmiObject win32_service -ComputerName $service.serverName | 
         ?{ $_.Name -like $service.serviceName } | 
         select PathName
