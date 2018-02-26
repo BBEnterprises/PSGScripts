@@ -46,7 +46,7 @@ function testConnection ($computer, $remoteHost, $remotePort) {
         }
     }
     if (-not (Wait-Job -Job $job -Timeout 15) ) {
-        $errorMessage = 'Command invokation failed against {0}!' -f $computer;
+        $errorMessage = 'Command invocation failed against {0}!' -f $computer;
         Stop-Job   $job;
         Remove-Job $job;
         throw $errorMessage;
