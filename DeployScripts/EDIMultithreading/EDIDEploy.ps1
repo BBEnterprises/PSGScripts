@@ -5,7 +5,7 @@
     );
 
     Get-Content -Path $cfgFile | ?{ $_ -notmatch '^\s*#'} | %{
-        ($action, $col1, $col2) = $_ -split '\s*:\s*';
+        ($action, $col1, $col2, $col3, $col4) = $_ -split '\s*:\s*';
         
         $actionList.Value += New-Object -TypeName psobject -Property @{
             'actionType' = $action;
@@ -17,10 +17,25 @@
     }
 }
 
-function confirmCopies {
+function confirmActions {
     param([ref]$actionList);
 
-    #First make sure all your deploy files exist
+    $actionTypes = @{
+        'copy'   = $function:checkCopy;
+        'rename' = $function:checkFile;
+        'delete' = $function:checkFile;
+        'setSvc' = $function:checkSvc;
+    }
+
+    $problemFound = 0;
+
+    foreach ($action in $actionList.Value) {
+        if(& $actionTypes.($action.actionType) $action) {
+            $problemFound = 1;
+        }
+    }
+    if ($problemFound) { exit }
+    <#First make sure all your deploy files exist
     $missingFile = 0
     foreach ($action in $actionList.Value) {   
         #Continue if it's a setSvc since there isn't a file to verify
@@ -34,6 +49,7 @@ function confirmCopies {
         }
     }
     if ($missingFile) { exit }
+    #>
 
 
     #IF all files are present prompt the user to review the copies that are about to happen
@@ -109,16 +125,63 @@ function setSvc {
     }
 }
 
+function checkCopy {
+    param($action);
+
+    $missingFile = 0;
+    if ( -not (Test-Path $action.col1) ) {
+        Write-Host ("Missing copy source file: {0}" -f $action.col1);
+        $missingFile = 1;
+    }
+
+    $destDir = '';
+    if ($action.col2 -match '^(.+\\)[^\\]+$') {
+        $destDir = $matches[1];
+    }
+
+    if ( -not (Test-Path $destDir) ) {
+        Write-Host ("Missing copy dest dir: {0}" -f $action.col2);
+        $missingFile = 1;
+    }
+
+    if ($missingFile) {
+        return 1;
+    }
+
+    return 0;
+}
+
+function checkFile {
+    param($action);
+
+    if (-not (Test-Path $action.col1) ) {
+        Write-Host ("Missing file for action {0}: {1}" -f $action.actionType, $action.col1);
+        return 1;
+    }
+
+    return 0;
+}
+
+function checkSvc {
+    param($action);
+
+    if (-not (Get-Service -ComputerName $action.col1 -Name $action.col2 -ErrorAction SilentlyContinue) ) {
+        Write-Host ("Missing service: {0} - {1}" -f $action.col1, $action.col2);
+        return 1;
+    }
+
+    return 0;
+}
 ############
 #Main Block#
 ############
 $cfgFile  = 'C:\Users\cgamble\Documents\Code\PSGScripts\DeployScripts\22759\deploy.cfg';
-#$cfgFile  = 'C:\users\cgamble\Documents\Code\PSGScripts\DeployScripts\TestDeploy\rollback.cfg';
+#$cfgFile  = 'C:\users\cgamble\Documents\Code\PSGScripts\DeployScripts\TestDeploy\deploy.cfg';
 $actionList = @();
 
-readCfg       $cfgFile ([ref]$actionList);
-confirmCopies ([ref]$actionList);
-runActions    ([ref]$actionList);
+readCfg        $cfgFile ([ref]$actionList);
+confirmActions ([ref]$actionList);
+#runActions     ([ref]$actionList);
 
 <#
 TO DO:
