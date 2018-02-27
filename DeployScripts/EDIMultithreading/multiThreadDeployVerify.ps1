@@ -50,15 +50,7 @@ function checkCfg {
 ############
 #Main Block#
 ############
-$clientConfigs = @(
-    'hospira.cfg'
-    ,'morris.cfg'
-    ,'ncmutual.cfg'
-    ,'om.cfg'
-    ,'rochesterdrug.cfg'
-);
-
-Get-ChildItem -Path '\\psg-file01\shared\Public\EDIMultiThreading\Deployment\22557\deploy\svc01' | ?{ $_.Name -notmatch '^prod' } | %{
+Get-ChildItem -Path '\\psg-file01\shared\Public\EDIMultiThreading\Deployment\22759\deploy\svc01' | ?{ $_.Name -notmatch '^prod' } | %{
     $_ | Get-ChildItem -Recurse | ?{ $_.Name -match '\.cfg$' } | %{
         checkCfg $_;
     }
