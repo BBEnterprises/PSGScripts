@@ -17,31 +17,29 @@
 }
 
 function checkService {
-    param([ref]$service);
+    param(
+    [ref]$service
+    ,    $baseLog
+    );
     $serviceObj = 0;
-
-    <#$job = Start-Job -ArgumentList($service) -ScriptBlock {
-        param($service);
-        Get-Service -ComputerName $service.value.serverName -Name $service.value.serviceName -ErrorAction SilentlyContinue;
-    }#>
 
     $job = Start-Job -ArgumentList($service) -ScriptBlock {
         param($service);
-        Invoke-Command -ComputerName $service.value.serverName -ArgumentList($service.value.serviceName) -ScriptBlock {
-            param($serviceName);
-            Get-Service -Name $serviceName -ErrorAction SilentlyContinue;
-        }
+        Get-Service -ComputerName $service.value.serverName -Name $service.value.serviceName -ErrorAction SilentlyContinue;
     }
 
-    if (Wait-Job -Job $job -Timeout 15) {
+    Wait-Job -Job $job -Timeout 30 | Out-Null;
+
+    if ($job.State -eq 'Completed') {
         $serviceObj = Receive-Job $job;
         Remove-Job $job;
     }
     else {
         Stop-Job $job;
         Remove-Job $job;
-        $logMessage = "Get-Service remote invocation failed against {0}!" -f $service.value.serverName;
-        $logMessage | Out-File -FilePath $global:baseLog -Encoding ascii -Append;
+        $logMessage = "Invoke-Command remote invocation failed against {0}!" -f $service.value.serverName;
+        $logMessage | Out-File -FilePath $baseLog -Encoding ascii -Append;
+        Write-Host $logMessage
     }
 
     if ($serviceObj) {
@@ -49,8 +47,9 @@ function checkService {
     }
 
     $dateTime = [DateTime]::Now;
-    ('{0} : {1} : {2} : {3}' -f $dateTime, $service.value.serverName, $service.value.serviceName, $service.value.Status) |
-    Out-File -FilePath $global:baseLog -Encoding ascii -Append;
+    $logMessage = ('{0} : {1} : {2} : {3}' -f $dateTime, $service.value.serverName, $service.value.serviceName, $service.value.Status);
+    $logMessage | Out-File -FilePath $baseLog -Encoding ascii -Append;
+    Write-Host $logMessage;
 
     if ($service.value.Status -ne 'Running')  {
         return 1;
@@ -84,6 +83,7 @@ function generateAlertText {
 		    <table cellspacing="0" style="width:100%">
 			    <th align="left">Server Name</th>			    
 			    <th align="left">Service Name</th>
+                <th align="left">Service State</th>
                 <th align="left">Executable</th>
 ';
     $counter = 1;
@@ -95,7 +95,8 @@ function generateAlertText {
             <td>{1}</td>
             <td>{2}</td>
             <td>{3}</td>
-        </tr>' -f $classArr[($counter % 2)], $service.serverName, $service.serviceName, $execPath);
+            <td>{4}</td>
+        </tr>' -f $classArr[($counter % 2)], $service.serverName, $service.serviceName, $service.Status, $execPath);
 
         $counter++
     }
@@ -130,6 +131,8 @@ function alert {
     param(
         $message
         ,$downServices
+        ,$passFile
+        ,$alertLog
     );
 
     $dateTime   = [DateTime]::Now;
@@ -141,7 +144,7 @@ function alert {
     $smtp       = 'smtp.office365.com'
     $logMessage = '';
     
-    $secPassWord = Get-Content $global:passFile | ConvertTo-SecureString
+    $secPassWord = Get-Content $passFile | ConvertTo-SecureString
     $creds       = New-Object System.Management.Automation.PSCredential($fromMail, $secPassWord);
 
     foreach ($service in $downServices) {
@@ -167,7 +170,7 @@ function alert {
             -Port 587 `
             -ErrorAction Stop;
         
-        $logMessage | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
+        $logMessage | Out-File -FilePath $alertLog -Encoding ascii -Append;
     }
     catch {
         "{0} : Failed to send email alert to {1} with exception:{2}`n" -f $dateTime, $toMail, $_.Exception.Message | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
@@ -178,28 +181,21 @@ function alert {
 #######################
 #Main Block Below Here#
 #######################
-#$cfgFile      = 'C:\users\cgamble\documents\betaServiceMon.cfg';
-$cfgFile      = 'C:\users\cgamble\documents\code\PSGScripts\scriptCfg\serviceMon.cfg';
-$baseLog      = 'C:\temp\serviceMon.log';
-$alertLog     = 'C:\temp\serviceMonAlert.log';
-$passFile     = 'C:\temp\smtpPass';
+$cfgFile      = 'D:\ScriptCfg\serviceMon.cfg'
+$passFile     = 'D:\ScriptCfg\encryptedSmtpPass';
+$baseLog      = 'D:\ScriptLogs\serviceMon.log';
+$alertLog     = 'D:\ScriptLogs\serviceMonAlert.log';
 $services     = readConfig $cfgFile;
 $downServices = @();
 
 
 foreach ($service in $services) {
-    if (checkService ([ref]$service)) {
+    if (checkService ([ref]$service) $baseLog) {
         $downServices += $service;
     }
 }
 
-
-<#
-1 - Make script output to log even when it finds no problems
-#>
-
-
 if ($downServices) {
     $message = generateAlertText $downServices
-    alert $message $downServices;
+    alert $message $downServices $passFile $alertLog;
 }
