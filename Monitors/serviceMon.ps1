@@ -173,7 +173,7 @@ function alert {
         $logMessage | Out-File -FilePath $alertLog -Encoding ascii -Append;
     }
     catch {
-        "{0} : Failed to send email alert to {1} with exception:{2}`n" -f $dateTime, $toMail, $_.Exception.Message | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
+        "{0} : Failed to send email alert to {1} with exception:{2}`n" -f $dateTime, $toMail, $_.Exception.Message | Out-File -FilePath $alertLog -Encoding ascii -Append;
     }
 
 }
