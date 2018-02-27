@@ -56,7 +56,7 @@ function confirmActions {
     $caption  = 'Review File Actions';
     $message  = "Carefully review the  actions listed in your terminal and confirm their accuracy`n";
     
-    $actionList.Value | select action, col1, col2, col3, col4 | ft -AutoSize
+    $actionList.Value | select actionType, col1, col2, col3, col4 | ft -AutoSize
     
     $options  = [System.Management.Automation.Host.ChoiceDescription[]] @('Proceed', 'Halt');
 
