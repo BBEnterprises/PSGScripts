@@ -3,7 +3,7 @@
 
     $table = @();
 
-    Get-Process |         
+    Get-Process -ComputerName $computer |         
         Group-Object -Property ProcessName |
         %{
             $process = $_;
@@ -17,8 +17,7 @@
         Format-Table Name, WorkingSet;
 }
 
-$computers = @();
-
-foreach ($computer in $computers) {
-    getMemUsers $computer;
-}
+############
+#Main Block#
+############
+getMemUsers hss-prod-app01;
