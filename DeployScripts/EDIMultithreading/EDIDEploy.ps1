@@ -35,22 +35,6 @@ function confirmActions {
         }
     }
     if ($problemFound) { exit }
-    <#First make sure all your deploy files exist
-    $missingFile = 0
-    foreach ($action in $actionList.Value) {   
-        #Continue if it's a setSvc since there isn't a file to verify
-        if ($action.actionType -eq 'setSvc') {
-            continue;
-        }
-
-        if ( -not (Test-Path $action.col1) ) {
-            Write-Host ("Missing File: {0}" -f $action.col1);
-            $missingFile = 1;
-        }
-    }
-    if ($missingFile) { exit }
-    #>
-
 
     #IF all files are present prompt the user to review the copies that are about to happen
     $caption  = 'Review File Actions';
@@ -120,8 +104,15 @@ function deleteFile {
 function setSvc {
     param($action);
 
-    Get-Service -ComputerName $action.col1 -Name $action.col2 | %{
-        $_ | Set-Service -Status $action.col3 -StartupType $action.col4;
+    try {
+        Get-Service -ComputerName $action.col1 -Name $action.col2 | %{
+            $_ | Set-Service -Status $action.col3 -StartupType $action.col4;
+        }
+        Write-Host ("Stopping Service: {0} - {1}" -f $action.col1, $action.col2);
+    }
+    catch {
+        Write-Host ("SVC STOP ERROR: {0} - {1}" -f $action.col1, $action.col2);
+        Write-Host $_.Exception.Message;
     }
 }
 
@@ -181,7 +172,7 @@ $actionList = @();
 
 readCfg        $cfgFile ([ref]$actionList);
 confirmActions ([ref]$actionList);
-#runActions     ([ref]$actionList);
+runActions     ([ref]$actionList);
 
 <#
 TO DO:
