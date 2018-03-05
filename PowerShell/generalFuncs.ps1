@@ -1,4 +1,64 @@
-﻿function Invoke-Sqlcmd2 
+﻿class server {
+    [string]$name;
+    [string]$armorName;
+
+    static [hashtable]$armorNames = @{
+        'HSS-PROD-APP01' = 'PHAR06VMA03';
+        'HSS-PROD-FTP01' = 'PHAR06VMA04';
+        'HSS-PROD-DB08'  = 'PHAR06VMA05';
+        'HSS-PROD-DT01'  = 'PHAR06VMA06';
+        'HSS-PROD-PW01'  = 'PHAR06VMA07';
+        'HSS-PROD-DB07'  = 'PHAR06VMD01';
+        'HSS-TEST-DB01'  = 'PHAR06VMD06';
+        'HSS-PROD-DB02'  = 'PHAR06VMD07';
+        'HSS-TEST-DB02'  = 'PHAR06VMD08';
+        'HSS-PROD-DB03'  = 'PHAR06VMD09';
+        'HSS-PROD-DB04'  = 'PHAR06VMD10';
+        'HSS-PROD-DB05'  = 'PHAR06VMD11';
+        'HSS-PROD-DB06'  = 'PHAR06VMD12';
+        'HSS-PROD-DB01'  = 'PHAR06VMD13';
+        'HSS-TEST-WEB01' = 'PHAR06VMW03';
+        'HSS-PROD-WEB01' = 'PHAR06VMW04';
+        'HSS-PROD-WEB03' = 'PHAR06VMW05';
+        'HSS-PROD-WEB02' = 'PHAR06VMW06';
+        'HSS-PROD-SVC01' = 'PHAR06VMA09';
+        'HSS-QA-WEB01'   = 'PHAR06QAWEB01';
+        'HSS-QA-SVC01'   = 'PHAR06QASVC01';
+        'HSS-QA-DB01'    = 'PHAR06QADB01';
+
+    };
+
+    server([string]$serverName) {
+        $this.name      = $serverName;
+        
+        if ([server]::armorNames.$serverName) {
+            $this.armorName = [server]::armorNames.$serverName;
+        }
+    }
+
+    [bool]testRPC () {
+        $job = Start-Job -ArgumentList($this.name) -ScriptBlock {
+            param([string]$serverName);
+
+            Invoke-Command -ComputerName $serverName -ScriptBlock { return 1 }
+        }
+
+        Wait-Job -Job $job -Timeout 30 | Out-Null;
+
+        if ($job.State -eq 'Completed') {
+            $result = Receive-Job -Job $job;
+            Remove-Job -Job $job;
+            return $result;
+        }
+        else {
+            Stop-Job   -Job $job;
+            Remove-Job -Job $job
+            return 0;
+        }
+    }
+}
+
+function Invoke-Sqlcmd2 
 { 
     [CmdletBinding()] 
     param( 
