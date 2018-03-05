@@ -4,7 +4,7 @@ class server {
 
     static [hashtable]$armorNames = @{
         'HSS-PROD-APP01' = 'PHAR06VMA03';
-        'HSS-PROD-FTP02' = 'PHAR06VMA04';
+        'HSS-PROD-FTP01' = 'PHAR06VMA04';
         'HSS-PROD-DB08'  = 'PHAR06VMA05';
         'HSS-PROD-DT01'  = 'PHAR06VMA06';
         'HSS-PROD-PW01'  = 'PHAR06VMA07';
