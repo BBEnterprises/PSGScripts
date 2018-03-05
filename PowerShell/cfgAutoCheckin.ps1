@@ -8,9 +8,15 @@ function checkInChanges {
     $commitMessage = [datetime]::Now.ToString('MM/dd/yyyy') + ' Auto Commit';
 
     $status = git status 2>&1;
-
-    if ($status -notmatch 'nothing to commit, working tree clean') {    
+    if ($status -notmatch 'nothing to commit') { 
         git checkout staging;
+
+        if ($error[0] -match 'Aborting') {
+            alert $error[0] '340b Cfg AutoCommit Failed!';
+            Write-Host 'Caught!';
+            exit;
+        }
+
         git add ./;
         $status = git status;
         $status = $status -replace "`n", "`r`n";
