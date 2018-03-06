@@ -5,14 +5,17 @@
 }
 
 function checkInChanges {
+    param($cfgParams);
+
     $commitMessage = [datetime]::Now.ToString('MM/dd/yyyy') + ' Auto Commit';
 
-    $status = git status 2>&1;
+    $status = (git status 2>&1) -join "`n";
+
     if ($status -notmatch 'nothing to commit') { 
         git checkout staging;
 
         if ($error[0] -match 'Aborting') {
-            alert $error[0] '340b Cfg AutoCommit Failed!';
+            alert $error[0] '340b Cfg AutoCommit Failed!' $cfgParams;
             Write-Host 'Caught!';
             exit;
         }
@@ -22,13 +25,14 @@ function checkInChanges {
         $status = $status -replace "`n", "`r`n";
         git commit -m $commitMessage;
 
-        $output = git push 2>&1;
+        $output = (git push 2>&1) -join "`n";
+        
 
         if ($output -match 'error:') {
-            alert ($output.Exception.Message -join "`n") '340b Cfg AutoCommit Failed!';
+            alert ($output.Exception.Message -join "`n") '340b Cfg AutoCommit Failed!' $cfgParams;
         }
         else  {
-            alert $status '340b Cfg AutoCommit Successful!';
+            alert $status '340b Cfg AutoCommit Successful!' $cfgParams;
         }
     }   
 }
@@ -37,6 +41,7 @@ function alert {
     param(
          [string]$message
         ,[string]$subject
+        ,$cfgParams
 
     );
 
@@ -47,7 +52,7 @@ function alert {
     $smtp       = 'smtp.office365.com'
     $logMessage = '';
   
-    $secPassWord = Get-Content $global:passFile | ConvertTo-SecureString
+    $secPassWord = Get-Content $cfgParams.passFile | ConvertTo-SecureString
     $creds       = New-Object System.Management.Automation.PSCredential($fromMail, $secPassWord);
     
     try {
@@ -63,16 +68,18 @@ function alert {
             -ErrorAction Stop;       
     }
     catch {
-        "{0} : Failed to send email alert to {1} with exception:{2}`n" -f $dateTime, $toMail, $_.Exception.Message | Out-File -FilePath $global:alertLog -Encoding ascii -Append;
+        "{0} : Failed to send email alert to {1} with exception:{2}`n" -f $dateTime, $toMail, $_.Exception.Message | Out-File -FilePath $cfgParams.alertLog -Encoding ascii -Append;
     }
 
 }
 
 function checkFiles {
-    Get-ChildItem $global:localRepo -Recurse | ?{ -not $_.PSIsContainer }|%{
+    param($cfgParams);
+
+    Get-ChildItem $cfgParams.localRepo -Recurse | ?{ -not $_.PSIsContainer }|%{
         $remotePath = '';
         
-        if ($_.FullName -match $global:regEx) {
+        if ($_.FullName -match $cfgParams.regEx) {
             $remotePath = '\\' + $matches[1];
 
             if (-not (Test-Path $remotePath)) {
@@ -89,16 +96,20 @@ function checkFiles {
 ############
 #Main Block#
 ############
-$localRepo   = 'C:\Users\cgamble\Documents\Code\PSG340B_EDISVC_Configs\cfgFiles\';
-$regEx       = [System.Text.RegularExpressions.Regex]::Escape($localRepo) + '(.+)$';
-$alertLog    = 'C:\temp\autoCheckInAlertLog';
-$passFile    = 'C:\Temp\smtpPass';
+$localRepo  = 'C:\users\PSG340B_EDISVC\PSG340B_EDISVC_Configs\cfgFiles\';
+$cfgParams  = @{
+    'localRepo' = $localRepo;
+    'regEx'     = [System.Text.RegularExpressions.Regex]::Escape($localRepo) + '(.+)$';
+    'alertLog'  = 'D:\ScriptLogs\autoCheckInAlertLog';
+    'passFile'  = 'D:\ScriptCfg\EDISVCsmtpPass';
 
-Set-Location $localRepo;
+}
 
-checkFiles;
+Set-Location $cfgParams.localRepo;
 
-checkInChanges;
+checkFiles $cfgParams;
+
+checkInChanges $cfgParams;
 
 
 <#
